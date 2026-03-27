@@ -3,12 +3,12 @@ from bs4 import BeautifulSoup
 
 BASE_LINK = "https://rejuvenation.wiki.gg" # The base for all links 
 FORMS = [ # All the forms
-    ("Aevian Rocky", "aeviumrocky"),
-    ("Aevian Fiery", "aeviumfiery"),
-    ("Aevian Icy", "aeviumicy"),
-    ("Alolan", "alola"),
-    ("Galarian", "galar"),
-    ("Aevian", "aevium"),
+    ("aevianrocky", "aeviumrocky"),
+    ("aevianfiery", "aeviumfiery"),
+    ("aevianicy", "aeviumicy"),
+    ("alolan", "alola"),
+    ("galarian", "galar"),
+    ("aevian", "aevium"),
 ]
 
 def makePokemonDictionary(webpage : str):
@@ -18,11 +18,10 @@ def makePokemonDictionary(webpage : str):
         webpage (str): Link to webpage that contains a table of all the pokemon, should be "https://rejuvenation.wiki.gg/wiki/Pok%C3%A9mon_Locations"
 
     Returns:
-        pokemonDictionary (dict) : Key = Pokemon name, value = List that contains a link to it's Rejuvenation wiki page, a boolean on whether that pokemon has regional forms, and the number of regional forms it possesess
+        pokemonDictionary (dict) : Key = Pokemon name, value = List that contains a link to it's Rejuvenation wiki page, a boolean on whether that pokemon has regional forms, and a list containing each form's name
     """
-    # Request for the HTML page
+    # Getting HTML page
     response = requests.get(webpage)
-    # Parse the HTML page
     soup = BeautifulSoup(response.text, "html.parser")
 
     # From the table body, get a list of the table body contents, being each row of the table, and strip out all the "/n" from the list
@@ -38,7 +37,7 @@ def makePokemonDictionary(webpage : str):
             rowData = element.contents
             rowData = list(filter(lambda x: x != '\n', rowData))
 
-            name = rowData[2].get_text().strip()
+            name = rowData[2].get_text().strip().lower().replace(" ", "")
 
             # Don't add the pokemon if it isn't obtainable
             if('Not Obtainable' == rowData[5].get_text().strip()):
@@ -52,8 +51,7 @@ def makePokemonDictionary(webpage : str):
 
             # Adding the pokemon's member variables
             pokemonDictionary[name] = [link]
-            pokemonDictionary[name].append(False)
-            pokemonDictionary[name].append(0)
+            pokemonDictionary[name].append([])
 
             # Processing pokemon in an alternate fashion if they are a regional form
             for key, value in FORMS:
@@ -82,9 +80,8 @@ def processForm(pokemonDictionary : dict, name : str, form : str):
     if baseName not in pokemonDictionary:
         raise KeyError(f"{baseName} not found in pokemonDictionary")
 
-    pokemonDictionary[baseName][1] = True
-    pokemonDictionary[baseName][2] += 1
-
     for key, value in FORMS:
         if (form == key):
+            pokemonDictionary[baseName][1].append(baseName + value)
+            pokemonDictionary[baseName + value] = pokemonDictionary.pop(baseName + key)
             return baseName + value
