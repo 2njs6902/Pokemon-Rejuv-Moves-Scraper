@@ -1,17 +1,8 @@
 import os
 from bs4 import BeautifulSoup
 from pathlib import Path
-import requests
-import time
 
-# Path to this Python file
-BASE_DIR = Path(__file__).resolve().parent
-
-# Find/Initialize output folder
-OUTPUT_DIR = BASE_DIR / "Output" 
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-FORMS = ["aeviumrocky", "aeviumfiery", "aeviumicy", "alola", "galar", "aevium"] # All the forms 
+FORMS = ["aeviumrocky", "aeviumfiery", "aeviumicy", "alola", "galar", "aevium", "sandcloak", "trashcloak", "midnight", "dusk"] # All the forms 
 
 def checkForm(pokemon : str):
     for form in FORMS:
@@ -20,59 +11,84 @@ def checkForm(pokemon : str):
 
     return False
 
-
 # Moves learned by level up
-def getLevelMoves(pokemonDict : dict, name : str, movesDict : dict):
-    #Getting HTML page
-    response = requests.get(pokemonDict[name][0])
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    #If the pokemon IS a form, skip it
+def getLevelMoves(pokeDict : dict, name :str, soup : BeautifulSoup, movesDict : dict):
+    # If your a pokemon form, skip you
     if(checkForm(name)):
         return
-    #If the pokemon doesn't have any forms continue as normally
-    if(len(pokemonDict[name][1]) == 0):
-        movesHTML = {}
-        i = 0
+    
+    # Otherwise, prepare the variable's we'll need for either of the next loops
+    movesHTML = {}
+    i = 0
+    numForms = len(pokeDict[name][1])
+    print(pokeDict[name][1])
 
+    # If your the base pokemon (i.e wormadam grass cloak is the base for sandy cloak and trash cloak)
+    if(numForms != 0):
+        table = soup.find(id="By_leveling_up").parent.next_sibling.next_sibling
+        for k in range(0, numForms + 1):
+            if(k == 0):
+                tempName = name
+            else:
+                tempName = pokeDict[name][1][k-1]
+
+            if tempName not in movesDict:
+                movesDict[tempName] = {}
+
+            t = 0
+            currTable = table.find("tbody").contents
+            workingTable = list(filter(lambda x: x != '\n', currTable))
+
+            for element in workingTable:
+                movesHTML[i] = element.contents
+                movesHTML[i] = list(filter(lambda x: x != '\n', movesHTML[i]))
+                i += 1
+            print(f"{k}th pokemon's html table is completed")
+            for value in movesHTML.values():
+                try:
+                    move_name = value[1].get_text().strip()
+                    if(move_name == "Move"):
+                        continue
+                    level = "8L" + value[0].get_text().strip()
+                
+                    if move_name in movesDict[tempName].keys():
+                        movesDict[tempName][move_name].append(level)
+                    else:
+                        movesDict[tempName][move_name] = [level]  
+                except:
+                    continue
+            print(f"{k}th pokemon was added to movesDict")
+            print(movesDict)
+            movesHTML = {}
+            i = 0
+            table = table.next_sibling.next_sibling.next_sibling.next_sibling
+            
+
+    #You dont got forms  THIS NEEDS TO BE FIXED WITH NEW MOVES DICTIOANRY LOGIC (The last bit when ur iterating through values in html, just change how they added to list)
+    else:
         table = soup.find(id="By_leveling_up").parent.next_sibling.next_sibling.find("tbody").contents
         table = list(filter(lambda x: x != '\n', table))
-        with open(OUTPUT_DIR / (name + ".txt"), "w", encoding="utf-8") as f:
-            f.write("\n".join(str(row) for row in table)) 
 
         for element in table:
             movesHTML[i] = element.contents
             movesHTML[i] = list(filter(lambda x: x != '\n', movesHTML[i]))
             i += 1
-        
-        for element in table:
-            cols = element.find_all(["td", "th"])
 
-            if len(cols) < 2:
-                continue
-
-            level = "8L" + cols[0].get_text(strip=True)
-            move_name = cols[1].get_text(strip=True)
+        for value in movesHTML.values():
+            move_name = value[1].get_text().strip()
+            level = "8L" + value[0].get_text().strip()
 
             if move_name in movesDict:
                 movesDict[move_name].append(level)
             else:
                 movesDict[move_name] = [level]
-    #If the pokemon does have forms do specia version TO DO TO DO
-    else:
-        movesHTML = {}
-        i = 0
-
-        table = soup.find(id="By_leveling_up").parent.next_sibling.next_sibling.find("tbody").contents
-        table = list(filter(lambda x: x != '\n', table))
-        with open(OUTPUT_DIR / (name + ".txt"), "w", encoding="utf-8") as f:
-            f.write("\n".join(str(row) for row in table))
-    time.sleep(3)
-
-    
 
 # Moves learned by TM
 def getTMMoves(movesDict : dict, soup : BeautifulSoup):
+    # If your a pokemon form, skip you
+    if(checkForm(name)):
+        return
+    
     movesHTML = {}
     i = 0
 
@@ -138,3 +154,9 @@ def getEggMoves(movesDict : dict, soup : BeautifulSoup):
             movesDict[move_name].append(level)
         else:
             movesDict[move_name] = [level]
+
+def getAllMoves(movesDict : dict, soup : BeautifulSoup):
+    getLevelMoves(movesDict, soup)
+    getTMMoves(movesDict, soup)
+    getTutorMoves(movesDict, soup)
+    getEggMoves(movesDict, soup)

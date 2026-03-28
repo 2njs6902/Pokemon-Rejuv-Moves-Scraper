@@ -3,7 +3,10 @@ import json
 from bs4 import BeautifulSoup
 from pathlib import Path
 from webNav import makePokemonDictionary
-from scrapers import getLevelMoves
+from scrapersProper import getLevelMoves
+import requests
+import time
+import random
 
 # Path to this Python file
 BASE_DIR = Path(__file__).resolve().parent
@@ -18,22 +21,63 @@ pkDict = makePokemonDictionary(pokedexLink)
 
 moves = {}
 
-i = 0
-for pokemon in pkDict:
-    print(i)
-    print(pokemon)
-    getLevelMoves(pkDict, pokemon, moves)
-    i += 1
-    if(i > 30):
-        break
+with open(OUTPUT_DIR / "wormadam.txt", "r", encoding="utf-8") as f:
+    content = f.read()
 
+soup = BeautifulSoup(content, "html.parser")
+print(pkDict["wormadam"])
+getLevelMoves(pkDict, "wormadam", soup, moves)
 
-# TODO
-
-# With webNav done, you have a dict of the pokemon. Make a loop that goes through each pokemon, and using the list in the value's list, extract its move data.
-# If the form boolean is true, count how many pokemon forms your reading for in this page and make an alternate path for the scraper functions to then deal reading multiple
-# learnsets
+print(moves)
 
 
 
-# FIGURE OUT HOW TO ADD IT IN THE RIGHT FORMAT (JSON) INTO ONE DOCUMENT!!
+
+
+
+# keys = list(pkDict.keys())
+# FORMS = ["aeviumrocky", "aeviumfiery", "aeviumicy", "alola", "galar", "aevium", "sandcloak", "trashcloak", "eastsea", "pom-pomstyle", "pa'ustyle", "sensustyle", "midnight", "dusk"] # All the forms 
+
+# def checkForm(pokemon : str):
+#     for form in FORMS:
+#         if form in pokemon:
+#             return True
+
+#     return False
+
+# def fetch_with_retry(url, retries=5):
+#     for attempt in range(retries):
+#         try:
+#             response = requests.get(url, timeout=10)
+
+#             if response.status_code == 200:
+#                 return response
+
+#             print(f"Status {response.status_code}, retrying...")
+        
+#         except requests.exceptions.RequestException as e:
+#             print(f"Error: {e}")
+
+#         # exponential backoff
+#         wait = 2 ** attempt
+#         print(f"Waiting {wait}s...")
+#         time.sleep(wait)
+
+#     return None
+
+# i = 777
+# for pokemon in pkDict:
+#     print(f"{i}: {keys[i]}")
+#     if(checkForm(pokemon)):
+#         continue
+#     response = fetch_with_retry(pkDict[pokemon][0])
+
+#     if response is None:
+#         print(f"Skipping {pokemon} (failed after retries)")
+#         continue
+
+#     soup = BeautifulSoup(response.text, "html.parser")
+#     with open(OUTPUT_DIR / (pokemon + ".txt"), "w", encoding="utf-8") as f:
+#         f.write("\n".join(str(row) for row in soup))
+#     i += 1
+#     time.sleep(random.uniform(2, 5))

@@ -9,6 +9,10 @@ FORMS = [ # All the forms
     ("alolan", "alola"),
     ("galarian", "galar"),
     ("aevian", "aevium"),
+    ("sandcloak", "sandy"),
+    ("trashcloak", "trash"),
+    ("midnight", "midnight"),
+    ("dusk", "dusk")
 ]
 
 def makePokemonDictionary(webpage : str):
@@ -55,8 +59,13 @@ def makePokemonDictionary(webpage : str):
 
             # Processing pokemon in an alternate fashion if they are a regional form
             for key, value in FORMS:
+                if(name == "duskull" or name == "dusknoir"):
+                    break
+                if(name == "lycanrocmidday"):
+                    pokemonDictionary["lycanroc"] = pokemonDictionary.pop(name)
+                    break
                 if key in name:
-                    name = processForm(pokemonDictionary, name, key)
+                    processForm(pokemonDictionary, name, key)
                     break
         i += 1
 
@@ -77,6 +86,7 @@ def processForm(pokemonDictionary : dict, name : str, form : str):
         properName (str) : The base name (species name) of the pokemon + the proper identifier (alola,galar, etc.)
     """
     baseName = name.replace(form, "")
+    
     if baseName not in pokemonDictionary:
         raise KeyError(f"{baseName} not found in pokemonDictionary")
 
@@ -84,4 +94,3 @@ def processForm(pokemonDictionary : dict, name : str, form : str):
         if (form == key):
             pokemonDictionary[baseName][1].append(baseName + value)
             pokemonDictionary[baseName + value] = pokemonDictionary.pop(baseName + key)
-            return baseName + value
